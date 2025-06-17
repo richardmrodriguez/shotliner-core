@@ -11,3 +11,4 @@ path = "src/lib.rs"
 
 [dependencies]
 screenplay-doc-parser-rs = "0.1.0"
+uuid = "1.17.0"

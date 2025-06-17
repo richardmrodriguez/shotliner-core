@@ -9,7 +9,7 @@ pub mod shots {
 pub mod document {
     use std::collections::HashMap;
 
-    use screenplay_doc_parser_rs::screenplay_document::ScreenplayDocument;
+    use screenplay_doc_parser_rs::screenplay_document::{ScreenplayDocument, TextElement};
 
     pub struct Scene {
         pub start: ScreenplayCoordinate,
@@ -60,13 +60,17 @@ pub mod document {
 
     // A Tag is a finite Screenplay Element or range of Elements, which correspond to one or more Departments.
     pub struct Tag {
+        pub id: String, //UUID?
         pub tag_str: String, // FIXME: TODO: We need to be able to search tags by ID as well as by production and/or screenplay element.
         // fuck.
         pub departments: Vec<ProductionDepartments>,
-        pub elements: Vec<ScreenplayCoordinate>, // get each element by using the coordinates
-        //probably could create some caching scheme but idgaf right now
+        //pub other_metadata: idk
     }
-
+    pub struct TaggedElement {
+        origin: ScreenplayCoordinate,
+        endpoint: ScreenplayCoordinate, //inclusive
+        tags: Vec<Tag>
+    }
 
     pub enum ProductionDepartments {
         Production,
@@ -115,10 +119,13 @@ pub mod document {
 
     }
 
+    
+
     pub struct ShotlinerDoc {
         pub screenplay: ScreenplayDocument,
         pub annotation_map: AnnotationMap
     }
+
     
 }
 
