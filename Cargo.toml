@@ -3,4 +3,11 @@ name = "shotliner-core"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "shotliner_corelib"
+path = "src/lib.rs"
+
+
+
 [dependencies]
+screenplay-doc-parser-rs = "0.1.0"
