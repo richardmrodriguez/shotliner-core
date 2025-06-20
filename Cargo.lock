@@ -219,9 +219,9 @@ checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
 
 [[package]]
 name = "screenplay-doc-parser-rs"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a6e87e55878917d12aba89eccd5e0cd62341eb0c9aef579533b56ac0607acda"
+checksum = "0c3c5e24764842ea7a53ebc87cf2f5f3fc5f79afeadbaf005ced0f84e1b9f4af"
 dependencies = [
  "dateparser",
  "unicode-segmentation",
