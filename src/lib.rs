@@ -7,6 +7,8 @@ use crate::document::{TaggedElement};
 
 
 pub mod production {
+    use uuid::Uuid;
+
     
     #[derive(Clone)]
     pub enum ProductionDepartments {
@@ -55,6 +57,11 @@ pub mod production {
     
     #[derive(Clone)]
     pub struct Shot {
+        pub id: Uuid,
+
+        pub scene_id: Uuid, // scenes get a UUID because they can have alphanumeric scene number...
+        pub shot_number: String,
+
         // Shot Composition (angle, staging, movement, etc.)
         pub shot_type: ShotType,
         pub subtype: Option<ShotSubType>,
@@ -131,31 +138,11 @@ pub mod multimedia {
 pub mod document {
     use std::{collections::HashMap, fmt::Error};
 
-    use screenplay_doc_parser_rs::screenplay_document::{ScreenplayDocument, TextElement};
+    use screenplay_doc_parser_rs::screenplay_document::{ScreenplayDocument, TextElement, ScreenplayCoordinate};
     use uuid::Uuid;
 
     use crate::{add_shotline, commands, multimedia::{MediaLink, MediaType}, remove_shotline};
     use crate::production;
-
-    
-
-    #[derive(Clone)]
-    pub struct Scene {
-        pub start: ScreenplayCoordinate,
-        pub end: ScreenplayCoordinate, 
-        pub story_location: String,
-        pub story_sublocation: Option<String>,
-        pub story_time_of_day: String, // DAY, NIGHT, etc.
-        pub real_locations: Vec<String>,
-        pub real_sublocations: Option<Vec<String>>,
-        pub real_time_of_day: String,
-    }
-    
-    #[derive(Clone)]
-    pub struct ScreenplayCoordinate {
-        pub page: u64,
-        pub line: u64,
-    }
 
     //TODO: this will be used later, when we implement merge-forward    
     #[derive(Clone)]
@@ -289,8 +276,9 @@ pub mod commands {
     
     pub enum Command {
         AddShotline(Uuid, ShotLine),
-        RemoveShotline(Uuid, Option<ShotLine>), // takes ID, old shotline
         ModifyShotline(Uuid, Option<ShotLine>), // takes ID, old shotline
+        RemoveShotline(Uuid, Option<ShotLine>), // takes ID, old shotline
+
         AddTag(Uuid, Tag),
         ModifyTag(Uuid, Option<Tag>),
         RemoveTag(Uuid, Option<Tag>),
@@ -299,6 +287,23 @@ pub mod commands {
 }
 
 pub fn get_shotlines_as_table(shotlines: &HashMap<Uuid, document::ShotLine>) -> Option<Vec<serializables::ShotListEntry>> {
+    use serializables::ShotListEntry;
+    let mut new_table = Vec::<ShotListEntry>::new();
+    for (_, shotline) in shotlines {
+        let shot = shotline.shot;
+        new_table.push(
+            ShotListEntry {
+                completed: false,
+                shot_number: shot.shot_number,
+                shot_type: shot.shot_type,
+                shot_subtype: shot.subtype,
+                shot_setup: shot.setup,
+                scene_number: shot.scene_number,
+                scene_environment
+            }
+        );
+    }
+    
     None
 }
 
