@@ -1,12 +1,13 @@
 use std::{collections::HashMap, fmt::Error};
-
-use screenplay_doc_parser_rs::screenplay_document;
+use screenplay_doc_parser_rs::screenplay_document::{self, ScreenplayDocument};
 use uuid::Uuid;
 
 use crate::document::{TaggedElement};
 
 
 pub mod production {
+    use std::ops::{Deref, DerefMut};
+
     use uuid::Uuid;
 
     
@@ -56,11 +57,30 @@ pub mod production {
     } 
     
     #[derive(Clone)]
-    pub struct Shot {
-        pub id: Uuid,
+    pub struct ShotNumber(pub String);
 
-        pub scene_id: Uuid, // scenes get a UUID because they can have alphanumeric scene number...
-        pub shot_number: String,
+
+    #[derive(Clone, PartialEq)]
+    pub struct ShotID(Uuid);
+    impl Deref for ShotID {
+        type Target = Uuid;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+
+    }
+    impl DerefMut for ShotID {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct Shot {
+        pub id: ShotID,
+
+        pub scene_id: screenplay_doc_parser_rs::screenplay_document::SceneID, // scenes get a UUID because they can have alphanumeric scene number...
+        pub shot_number: ShotNumber,
 
         // Shot Composition (angle, staging, movement, etc.)
         pub shot_type: ShotType,
@@ -85,31 +105,31 @@ pub mod production {
 /// Structs for export types, like Shot Lists or Storyboard Templates
 pub mod serializables {
 
-    use crate::{document, production};
+    use crate::{production::{ShotNumber, ShotSetup, ShotSubType, ShotType}};
+    use screenplay_doc_parser_rs::{self, screenplay_document};
     
     /// A singular shot entry, which takes up a single row of the worksheet.
     pub struct ShotListEntry {
-        completed: bool,
+        pub(crate) completed: bool,
         
-        
-        shot_number: String,
-        shot_type: production::ShotType,
-        shot_subtype: production::ShotSubType,
-        shot_setup: String,
+        pub shot_number: ShotNumber,
+        pub shot_type: ShotType,
+        pub shot_subtype: ShotSubType,
+        pub shot_setup: ShotSetup,
 
-        scene_number: String,
-        scene_environment: String,
-        scene_time: String,
-        scene_location: String,
-        scene_sublocation: String,
+        pub scene_number: screenplay_document::SceneNumber,
+        pub scene_environment: screenplay_document::Environment,
+        pub scene_time: screenplay_document::TimeOfDay,
+        pub scene_location: screenplay_document::Location,
+        pub scene_sublocation: Option<screenplay_document::Location>,
 
 
-        group: String,
-        characters: String,
-        tags: String,
-        props: String,
+        pub group: String,
+        pub characters: String,
+        pub tags: String,
+        pub props: String,
 
-        estimated_setup_time: String,
+        pub estimated_setup_time: String,
 
 
         
@@ -286,25 +306,40 @@ pub mod commands {
 
 }
 
-pub fn get_shotlines_as_table(shotlines: &HashMap<Uuid, document::ShotLine>) -> Option<Vec<serializables::ShotListEntry>> {
+pub fn get_shotlines_as_table(shotlines: &HashMap<Uuid, document::ShotLine>, screenplay_doc: &ScreenplayDocument) -> Option<Vec<serializables::ShotListEntry>> {
     use serializables::ShotListEntry;
     let mut new_table = Vec::<ShotListEntry>::new();
     for (_, shotline) in shotlines {
-        let shot = shotline.shot;
+        let shot = &shotline.shot;
+        let scene = screenplay_doc.scenes.get(&shot.scene_id)?;
         new_table.push(
             ShotListEntry {
                 completed: false,
-                shot_number: shot.shot_number,
-                shot_type: shot.shot_type,
-                shot_subtype: shot.subtype,
-                shot_setup: shot.setup,
-                scene_number: shot.scene_number,
-                scene_environment
+                shot_number: shot.shot_number.clone(),
+                shot_type: shot.shot_type.clone(),
+                shot_subtype: shot.subtype.clone()?,
+                shot_setup: shot.setup.clone(),
+                scene_number: scene.number.clone()?,
+                scene_environment: scene.environment.clone(),
+                scene_time: scene.story_time_of_day.clone()?,
+                scene_location: scene.story_location.clone(),
+                scene_sublocation: scene.story_sublocation.clone(),
+                group: "".into(),
+                characters: "".into(), // TODO: add get_characters_for_shot function (will probably piggy back off functions like _get_pages_for_shot or get_lines_for_shot...)
+                // the ScreenplayDocument should be responsible for basic gets like Scene and Page numbers/IDs,
+                // or all scenes with a given location, all characters within a scene, all scenes with a character
+                // BUT only SHOTLINER-CORE should be responsible for other advanced gets like all characters in a shotline,
+                // or all tags or props, etc.
+                // SL-CORE is responsible for assigning and finding PRODUCTION elements,
+                // but ScreenplayDocument is responsible for SCREENPLAY elements, things inherent like speaking CHARACTERS and LOCATIONS and ALHPA-NUMBERED elements (pages and scenes) 
+                tags: "".into(),
+                props: "".into(),
+                estimated_setup_time: "".into()
             }
         );
     }
+    Some(new_table)
     
-    None
 }
 
 pub fn add_tagged_element(document: &mut document::ShotlinerDoc, id: Uuid, new_tagged_element: TaggedElement) -> Result<(), Error> {
@@ -374,46 +409,6 @@ pub fn remove_shotline(document: &mut document::ShotlinerDoc, id: Uuid) -> Resul
 
 #[cfg(test)]
 mod tests {
-
-    use super::*;
-
-    fn _create_pdfword(text: String, element_indentation: f64, y_height_inches: Option<f64>) -> screenplay_doc_parser_rs::pdf_document::Word {
-        use screenplay_doc_parser_rs::pdf_document;
-        use screenplay_doc_parser_rs::pdf_document::TextPosition;
-        let mut y_height_pts = 0.0;
-        if let Some(inches) = y_height_inches {
-            y_height_pts = 72.0 * inches;
-        }
-        else {
-            y_height_pts = 3.0 * 72.0;
-        }
-        
-        let new_word: pdf_document::Word = pdf_document::Word {
-            text: text.clone(), 
-            text_bbox_width: text.len() as f64 * 7.2 as f64, 
-            position: TextPosition {
-                x: element_indentation,
-                y: y_height_pts
-            }, 
-            font_name: None, 
-            font_size: 12.0, 
-            font_character_width: 7.2 
-        };
-        new_word
-    }
-
-    // TODO: Test output
-    // Create a Screenplay Doc with some content
-    // Print "before" state of content
-    // do operations (add Shotlines)
-    // Print "after" state of content (with newly added ShotLines)
-
-
-
-    #[test]
-    fn it_works() {
-        use screenplay_document;
-        let mut doc = screenplay_document::ScreenplayDocument::default();
-
-    }
+    
+    #test
 }
