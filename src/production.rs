@@ -6,27 +6,43 @@ use crate::{document::{Tag, TagID}, multimedia::MediaLink};
 
 
 #[derive(Clone, Debug)]
-pub enum ProductionDepartments {
+pub enum Department {
     Production,
     Art,
-    Costumes,
-    Makeup,
+    Wardrobe,
+    HairMakeup,
     Camera,
+    Sound,
+    Electric,
+    LightingGrip,
     Props,
-    SpecialFX,
+    PracticalFX,
+    VisualFX,
     Stunts,
     Animals,
     Vehicles,
+    Dance,
+    Choreography,
+    Pyrotechnics,
+    Armory,
+    Intimacy,
+    Craft,
+    Transportation,
+    Miscellaneous,
+
+    Other(String),
 
 }
 
 #[derive(Clone, Debug)]
 pub enum ShotType {
-    XWS,
-    WS,
-    MS,
-    CU,
-    XCU,
+    ExtremeWide,
+    Wide,
+    Medium,
+    CloseUp,
+    ExtremeCloseUp,
+    Insert,
+    Other,
 }
 
 //TODO: Make these better, maybe split up more categories    
@@ -75,8 +91,7 @@ impl ShotID {
 }
 
 #[derive(Clone, Debug)]
-pub struct Shot {
-    pub shot_number: ShotNumber,
+pub struct Composition {
 
     // Shot Composition (angle, staging, movement, etc.)
     pub shot_type: ShotType,
@@ -89,20 +104,10 @@ pub struct Shot {
     pub tags: Vec<TagID>,
     //pub media: Vec<crate::multimedia::MediaLink>
 }
-impl Shot {
-    pub fn new(str: Option<String>) -> Self {
-        Shot { 
-            shot_number: ShotNumber(
-                {
-                    if let Some(s) = str {
-                        s
-                    }
-                    else {
-                        " ".to_string()
-                    }
-                }
-            ), 
-            shot_type: ShotType::WS,
+impl Composition {
+    pub fn new() -> Self {
+        Composition { 
+            shot_type: ShotType::Wide,
             subtype: None, 
             setup: None, 
             camera_metadata: None, 
@@ -110,9 +115,6 @@ impl Shot {
             //media: Vec::new() 
         }
         
-    }
-    pub fn shot_number(&mut self, num: String) {
-        self.shot_number = ShotNumber(num);
     }
     pub fn shot_type(&mut self, shot_type: ShotType) {
         self.shot_type = shot_type;
