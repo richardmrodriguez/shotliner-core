@@ -4,7 +4,7 @@ use chrono::TimeZone;
 use screenplay_doc_parser_rs::screenplay_document::{self};
 use uuid::Uuid;
 
-use crate::{shotliner_document::{Shot, ShotLine, Tag, TagID}, multimedia::MediaLink};
+use crate::{shotliner_document::{ShotLine, Tag, TagID}, multimedia::MediaLink};
 
 
 #[derive(Clone, Debug)]
@@ -36,36 +36,48 @@ pub enum Department {
 
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ShotID(Uuid);
+impl Deref for ShotID {
+    type Target = Uuid;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl ShotID {
+    pub fn new() -> Self {
+        ShotID(Uuid::new_v4())
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct Shot {
+    pub shot_number: Option<ShotNumber>,
+    pub primary_composition: ShotComposition,
+    pub sub_compositions: Option<HashMap<screenplay_document::ScreenplayCoordinate, ShotComposition>>,
+    pub shotline: Option<crate::shotliner_document::ShotLine>
+}
+impl Shot {
+    pub fn new(
+    ) -> Self {
+        Shot {
+
+            shot_number: None,
+            primary_composition: ShotComposition::new(), // default is WIDE
+            sub_compositions: None,
+            shotline: None,
+        }
+    }
+}
+
 pub struct ProductionLocation {
-    location_string: String
+    location_string: String,
+    //... Physical real locations need other things...
+    environment: screenplay_document::Environment,
 }
 
-pub struct ShotList {
-    shots: Vec<Shot>,
-}
 
-pub struct SceneStrip<'a> {
-    scene: &'a screenplay_document::Scene, // gives us scene number, location, environment, and time of day 
-    story_day: Option<u32>,
-    page_span: Range<usize>,
-    pages_eigths: (u32, u32),
-    cast_in_scene: HashSet<screenplay_document::Character>,
-    production_locations: HashSet<ProductionLocation>,
-    estimated_duration: chrono::Duration,
-    completed: bool,
-}
-
-pub enum StripBoardEntry<'a> {
-    Scene(SceneStrip<'a>),
-    Banner(String),
-    DayBreak(chrono::NaiveDate), // TODO: how to account for time zones??
-    CompanyMove(chrono::Duration), // TODO: company move likely needs other things...
-    Other,
-}
-
-pub struct StripBoard<'a> {
-  entries: Vec<StripBoardEntry<'a>>  
-}
 
 #[derive(Clone, Debug)]
 pub enum ShotType {

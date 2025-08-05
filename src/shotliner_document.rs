@@ -58,25 +58,6 @@ impl TaggedElementID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct ShotID(Uuid);
-impl Deref for ShotID {
-    type Target = Uuid;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl DerefMut for ShotID {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-impl ShotID {
-    pub fn new() -> Self {
-        ShotID(Uuid::new_v4())
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct ShotLine {
     pub start: screenplay_document::ScreenplayCoordinate,
@@ -89,29 +70,10 @@ impl ShotLine {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Shot {
-    pub shot_number: Option<production::ShotNumber>,
-    pub primary_composition: production::ShotComposition,
-    pub sub_compositions: Option<HashMap<screenplay_document::ScreenplayCoordinate, production::ShotComposition>>,
-    pub shotline: Option<crate::shotliner_document::ShotLine>
-}
-impl Shot {
-    pub fn new(
-    ) -> Self {
-        Shot {
-
-            shot_number: None,
-            primary_composition: ShotComposition::new(), // default is WIDE
-            sub_compositions: None,
-            shotline: None,
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct AnnotationMap {
-    pub shotlines: HashMap<ShotID, Shot>,
+    pub shotlines: HashMap<production::ShotID, production::Shot>,
     pub tags: HashMap<TagID, Tag>,
     pub tagged_elements: HashMap<TaggedElementID, TaggedElement>,
     pub shot_setups: HashMap<Uuid, production::ShotSetup>
@@ -250,7 +212,7 @@ impl ShotlinerDoc {
     /// because this function is expected to be used in a higher-level command pattern.
     ///
     /// So, it may be useful
-    pub fn add_shotline(&mut self, shotline: Shot, id: ShotID) -> Result<(), Error> {
+    pub fn add_shotline(&mut self, shotline: production::Shot, id: production::ShotID) -> Result<(), Error> {
         if let None = self.annotation_map.shotlines.insert(id, shotline) {
             return Ok(());
         }
@@ -258,8 +220,8 @@ impl ShotlinerDoc {
     }
     pub fn modify_shotline(
         &mut self,
-        id: &ShotID,
-        new_shotline: Shot,
+        id: &production::ShotID,
+        new_shotline: production::Shot,
     ) -> Result<(), Error> {
         if let Some(_) = self.annotation_map.shotlines.get(id) {
             if let Some(_) = self
@@ -273,7 +235,7 @@ impl ShotlinerDoc {
 
         Err(Error) // Tried to modify a ShotLine that didn't exist!
     }
-    pub fn remove_shotline(&mut self, id: &ShotID) -> Result<(), Error> {
+    pub fn remove_shotline(&mut self, id: &production::ShotID) -> Result<(), Error> {
         if let Some(_) = self.annotation_map.shotlines.remove(id) {
             return Ok(());
         }

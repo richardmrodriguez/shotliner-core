@@ -13,13 +13,15 @@ use crate::shotliner_document::TaggedElement;
 /// specific Production elements.
 pub mod production;
 
-/// Structs for exportable data, like Shot Lists or Storyboard Templates
+/// Structs for exportable data, like Shot Lists, Strip Boards or Storyboard Templates
 pub mod serializables;
 
 /// Structs and Methods for storing types of media that may be linked or embedded into the ShotLiner document.
 pub mod multimedia;
 
 /// This module is responsible for retrieving filtered and sorted reports of AnnotationMap elements.
+/// 
+/// This is where you go to generate Shot Lists and Strip Boards, among other things...
 pub mod reports;
 
 /// The ShotLiner document itself.
@@ -29,58 +31,7 @@ pub mod reports;
 /// TODO: Move the AnnotationMap and its contained elements to a separate annotation module...
 pub mod shotliner_document;
 
-pub mod commands {
-    use std::{collections::VecDeque, fmt::Error};
-
-    use uuid::Uuid;
-
-    use crate::shotliner_document::{Shot, ShotID, Tag, TagID};
-    pub enum CommandHistoryStatus {
-        ExecuteSuccess,
-        UndoSuccess,
-        UndoLimitReached,
-        RedoLimitReached,
-    }
-
-    pub struct CommandHistory {
-        pub index: u64,
-        pub history: VecDeque<Command>,
-        pub max_history_size: u64,
-        pub current_history_size: u64,
-    }
-    impl CommandHistory {
-        fn execute(&mut self) -> Result<CommandHistoryStatus, Error> {
-            if self.index < self.max_history_size {
-                self.index = self.index + 1;
-                return Ok(CommandHistoryStatus::ExecuteSuccess);
-            } else {
-                return Err(Error);
-            }
-        }
-        fn undo(&mut self) {
-            if self.index > 0 {
-                self.index = self.index - 1;
-            } else {
-                // TODO:
-            }
-        }
-        fn redo(&mut self) {
-            if self.index + 1 <= self.current_history_size {
-                self.index = self.index + 1;
-            }
-        }
-    }
-
-    pub enum Command {
-        AddShotline(ShotID, Shot),
-        ModifyShotline(ShotID, Option<Shot>), // takes ID, old shotline
-        RemoveShotline(ShotID, Option<Shot>), // takes ID, old shotline
-
-        AddTag(TagID, Tag),
-        ModifyTag(TagID, Option<Tag>),
-        RemoveTag(TagID, Option<Tag>),
-    }
-}
+pub mod commands;
 
 #[cfg(test)]
 mod tests {
@@ -94,8 +45,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        production::{ShotComposition, ShotNumber, ShotSetup}, shotliner_document::{
-            AnnotationMap, ShotLine, ShotID, ShotlinerDoc, Tag, TagID, TaggedElement, TaggedElementID
+        production::{self, ShotComposition, ShotNumber}, shotliner_document::{
+            AnnotationMap, ShotLine,  ShotlinerDoc, Tag, TagID, TaggedElement, TaggedElementID
         }
     };
 
@@ -147,14 +98,14 @@ mod tests {
             unfilmed_lines: None
         };
 
-        let shot = crate::shotliner_document::Shot {
+        let shot = production::Shot {
             
             shot_number: Some(ShotNumber("1A".to_string())),
             primary_composition: new_composition,
             sub_compositions: None,
             shotline: Some(shotline)
         };
-        let Ok(_) = new_shotliner_doc.add_shotline(shot, ShotID::new()) else {
+        let Ok(_) = new_shotliner_doc.add_shotline(shot, production::ShotID::new()) else {
             panic!("Failed to add Shot.")
         };
 
