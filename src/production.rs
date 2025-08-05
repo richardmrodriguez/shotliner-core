@@ -1,8 +1,10 @@
-use std::{fmt::Error, ops::{Deref, DerefMut}};
+use std::{collections::{HashMap, HashSet}, fmt::Error, ops::{Deref, DerefMut, Range}};
 
+use chrono::TimeZone;
+use screenplay_doc_parser_rs::screenplay_document::{self};
 use uuid::Uuid;
 
-use crate::{document::{Tag, TagID}, multimedia::MediaLink};
+use crate::{shotliner_document::{Shot, ShotLine, Tag, TagID}, multimedia::MediaLink};
 
 
 #[derive(Clone, Debug)]
@@ -32,6 +34,37 @@ pub enum Department {
 
     Other(String),
 
+}
+
+pub struct ProductionLocation {
+    location_string: String
+}
+
+pub struct ShotList {
+    shots: Vec<Shot>,
+}
+
+pub struct SceneStrip<'a> {
+    scene: &'a screenplay_document::Scene, // gives us scene number, location, environment, and time of day 
+    story_day: Option<u32>,
+    page_span: Range<usize>,
+    pages_eigths: (u32, u32),
+    cast_in_scene: HashSet<screenplay_document::Character>,
+    production_locations: HashSet<ProductionLocation>,
+    estimated_duration: chrono::Duration,
+    completed: bool,
+}
+
+pub enum StripBoardEntry<'a> {
+    Scene(SceneStrip<'a>),
+    Banner(String),
+    DayBreak(chrono::NaiveDate), // TODO: how to account for time zones??
+    CompanyMove(chrono::Duration), // TODO: company move likely needs other things...
+    Other,
+}
+
+pub struct StripBoard<'a> {
+  entries: Vec<StripBoardEntry<'a>>  
 }
 
 #[derive(Clone, Debug)]
@@ -71,27 +104,27 @@ pub struct ShotNumber(pub String);
 
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct ShotID(Uuid);
-impl Deref for ShotID {
+pub struct _other_shot_id(Uuid);
+impl Deref for _other_shot_id {
     type Target = Uuid;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 
 }
-impl DerefMut for ShotID {
+impl DerefMut for _other_shot_id {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
-impl ShotID {
+impl _other_shot_id {
     pub fn new() -> Self {
-        ShotID(Uuid::new_v4())
+        _other_shot_id(Uuid::new_v4())
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Composition {
+pub struct ShotComposition {
 
     // Shot Composition (angle, staging, movement, etc.)
     pub shot_type: ShotType,
@@ -104,9 +137,9 @@ pub struct Composition {
     pub tags: Vec<TagID>,
     //pub media: Vec<crate::multimedia::MediaLink>
 }
-impl Composition {
+impl ShotComposition {
     pub fn new() -> Self {
-        Composition { 
+        ShotComposition { 
             shot_type: ShotType::Wide,
             subtype: None, 
             setup: None, 

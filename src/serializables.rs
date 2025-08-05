@@ -1,5 +1,5 @@
 use crate::production::*;
-use crate::document;
+use crate::shotliner_document;
 use screenplay_doc_parser_rs::{self, screenplay_document};
 
 /// A singular shot entry, which takes up a single row of the worksheet.
