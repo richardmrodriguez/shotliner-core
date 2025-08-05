@@ -5,17 +5,18 @@ use uuid::Uuid;
 
 use screenplay_doc_parser_rs::screenplay_document::{self, ScreenplayDocument};
 
-use crate::{commands, shotliner_document};
 use crate::production::{self, ShotComposition};
+use crate::{commands, shotliner_document};
 
 //TODO: this will be used later, when we implement merge-forward for new drafts of the screenplay
 #[derive(Clone)]
 pub struct SmartScreenplayCoordinate {}
 
 /// A Tag is a finite Screenplay Element or range of Elements, which correspond to one or more Departments.    
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Tag {
-    pub string: String, // FIXME: TODO: We need to be able to search tags by ID as well as by production and/or screenplay element.
+    pub string: String,
+    // FIXME: TODO: We need to be able to search tags by ID as well as by production and/or screenplay element.
     // fuck.
     pub departments: Vec<production::Department>,
     //pub other_metadata: idk
@@ -37,7 +38,10 @@ impl TagID {
 
 #[derive(Clone, Debug)]
 pub struct TaggedElement {
-    pub ocurrances: HashSet<(screenplay_document::ScreenplayCoordinate, screenplay_document::ScreenplayCoordinate)>, //list of RANGES that correspond to this thing...
+    pub ocurrances: HashSet<(
+        screenplay_document::ScreenplayCoordinate,
+        screenplay_document::ScreenplayCoordinate,
+    )>, //list of RANGES that correspond to this thing...
     pub origin: screenplay_document::ScreenplayCoordinate,
     pub endpoint: screenplay_document::ScreenplayCoordinate, //inclusive
     pub tags: Vec<TagID>, // tags are found / stored lazily; find tags by referencing the Annotation Map; Don't duplicate tag structs, just IDs
@@ -58,31 +62,60 @@ impl TaggedElementID {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Group {
+    string: String,
+    tags: HashSet<Tag>
+
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct GroupID(Uuid);
+impl GroupID {
+    pub fn new() -> Self{
+        GroupID(Uuid::new_v4())
+    }
+}
+impl Deref for GroupID {
+    type Target = Uuid;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ShotLine {
     pub start: screenplay_document::ScreenplayCoordinate,
     pub end: screenplay_document::ScreenplayCoordinate,
-    pub unfilmed_lines: Option<HashSet<screenplay_document::ScreenplayDocument>>
+    pub unfilmed_lines: Option<HashSet<screenplay_document::ScreenplayDocument>>,
 }
 impl ShotLine {
-    pub fn new(start: screenplay_document::ScreenplayCoordinate, end: screenplay_document::ScreenplayCoordinate) -> ShotLine {
-        ShotLine { start: start, end: end, unfilmed_lines: None }
+    pub fn new(
+        start: screenplay_document::ScreenplayCoordinate,
+        end: screenplay_document::ScreenplayCoordinate,
+    ) -> ShotLine {
+        ShotLine {
+            start: start,
+            end: end,
+            unfilmed_lines: None,
+        }
     }
 }
-
 
 #[derive(Clone)]
 pub struct AnnotationMap {
     pub shotlines: HashMap<production::ShotID, production::Shot>,
     pub tags: HashMap<TagID, Tag>,
+    pub groups: HashMap<GroupID, Group>,
     pub tagged_elements: HashMap<TaggedElementID, TaggedElement>,
-    pub shot_setups: HashMap<Uuid, production::ShotSetup>
+    pub shot_setups: HashMap<Uuid, production::ShotSetup>,
 }
 impl AnnotationMap {
     pub fn new() -> Self {
         AnnotationMap {
             shotlines: HashMap::new(),
             tags: HashMap::new(),
+            groups: HashMap::new(),
             tagged_elements: HashMap::new(),
             shot_setups: HashMap::new(),
         }
@@ -212,7 +245,11 @@ impl ShotlinerDoc {
     /// because this function is expected to be used in a higher-level command pattern.
     ///
     /// So, it may be useful
-    pub fn add_shotline(&mut self, shotline: production::Shot, id: production::ShotID) -> Result<(), Error> {
+    pub fn add_shotline(
+        &mut self,
+        shotline: production::Shot,
+        id: production::ShotID,
+    ) -> Result<(), Error> {
         if let None = self.annotation_map.shotlines.insert(id, shotline) {
             return Ok(());
         }

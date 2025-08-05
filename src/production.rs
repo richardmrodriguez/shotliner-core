@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::{shotliner_document::{ShotLine, Tag, TagID}, multimedia::MediaLink};
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Department {
     Production,
     Art,
@@ -26,10 +26,10 @@ pub enum Department {
     Dance,
     Choreography,
     Pyrotechnics,
-    Armory,
-    Intimacy,
-    Craft,
+    CraftServices,
     Transportation,
+    //Armory,
+    //Intimacy,
     Miscellaneous,
 
     Other(String),
@@ -190,6 +190,9 @@ impl ShotComposition {
     }
 
 }
+
+#[derive(Clone, Debug)]
+pub struct Prop(String);
 
 #[derive(Clone, Debug)]
 pub struct CameraMetadata {

@@ -4,17 +4,16 @@ use std::ops::Range;
 use crate::shotliner_document::{self, ShotlinerDoc};
 use crate::{production, serializables};
 use screenplay_doc_parser_rs::screenplay_document;
-pub struct ShotListEntry {
-    pub scene_number: screenplay_document::SceneNumber,
-    pub scene_environment: screenplay_document::Environment,
-    pub scene_time: screenplay_document::TimeOfDay,
-    pub scene_location: screenplay_document::LocationID,
-    pub scene_sublocation: Option<screenplay_document::LocationID>,
 
-    pub group: String,
+// FOR REFERENCE...
+pub struct ShotListEntry<'a> {
+    pub shot: &'a production::Shot,
+    pub scene: &'a screenplay_document::Scene,
+
+    pub group: shotliner_document::Group,
     pub characters: String,
-    pub tags: String,
-    pub props: String,
+    pub tags: Vec<&'a shotliner_document::Tag>,
+    pub props: Vec<&'a production::Prop>,
 
     pub estimated_setup_time: String,
     pub completed: bool,

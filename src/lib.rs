@@ -28,7 +28,9 @@ pub mod reports;
 /// 
 /// This contains the ScreenplayDocument and AnnotationMap.
 /// 
-/// TODO: Move the AnnotationMap and its contained elements to a separate annotation module...
+/// This also contains structs like Tags or ShotLines, which are neatly shown or represented as
+/// additions or annotations to the screenplay itself.
+/// 
 pub mod shotliner_document;
 
 pub mod commands;
@@ -36,13 +38,12 @@ pub mod commands;
 #[cfg(test)]
 mod tests {
     use core::panic;
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
 
     use screenplay_doc_parser_rs::{
         pdf_document::ElementIndentationsInches,
-        screenplay_document::{self, SceneID, ScreenplayCoordinate},
+        screenplay_document::{self, ScreenplayCoordinate},
     };
-    use uuid::Uuid;
 
     use crate::{
         production::{self, ShotComposition, ShotNumber}, shotliner_document::{
